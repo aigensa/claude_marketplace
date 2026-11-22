@@ -1,0 +1,19 @@
+# docs/contracts/<name>-vN.openapi.yaml. Data and request/response shapes. Library: paths stays empty.
+openapi: 3.1.0
+info:
+  title: <Contract name>
+  version: 1.0.0
+  description: <What this contract fixes. One sentence.>
+paths: {}
+components:
+  schemas:
+    Example:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok, error]
+        output:
+          description: Parsed output. Null when absent.
+          type: [object, "null"]

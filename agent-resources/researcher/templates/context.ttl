@@ -1,0 +1,22 @@
+# docs/decisions/context.ttl. Running context. IDs global and stable.
+# Retire items (dec:itemStatus dec:Retired + dec:retiredOn + dec:retiredReason). Never delete.
+@prefix dec:  <urn:researcher:decision#> .
+@prefix d:    <urn:decisions:> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+d:F-1 a dec:Fact ; dec:text "Fact." ; dec:source "path:line or URL" ; dec:grade dec:GradeA ;  # A|B|C
+    dec:accessed "YYYY-MM-DD"^^xsd:date ; dec:itemStatus dec:Active ; dec:originDecision d:D0001 .
+d:P-1 a dec:Probe ; dec:probeKind dec:GrepProbe ; dec:probeTarget "src/pkg/mod.py" ;   # Grep|Hash|Key|Test
+    dec:probePattern "def distinctive_name\\(" ; dec:probeExpect dec:Present .             # see references/probes.md
+# Add to a grade A project Fact:   dec:probe d:P-1 ;   (the Stop hook stamps dec:atCommit)
+# After code changes the fact:     dec:driftedTo d:F-<newer fact that records the current state> ;
+# A fact with no probe, checked independently:  dec:confirmedBy dec:SecondSource ; dec:confirmedOn "YYYY-MM-DD"^^xsd:date ; dec:confirmedNote "what was run" ;
+d:C-1 a dec:Constraint ; dec:text "Constraint." ; dec:strength dec:HardConstraint ;          # Hard|Soft
+    dec:itemStatus dec:Active ; dec:originDecision d:D0001 .
+d:A-1 a dec:Assumption ; dec:text "Assumption." ; dec:basis d:F-1 ;
+    dec:itemStatus dec:Active ; dec:originDecision d:D0001 .
+d:U-1 a dec:Unknown ; dec:text "Unknown." ; dec:couldChangeResult false ;
+    dec:itemStatus dec:Open ; dec:originDecision d:D0001 .                                  # Open|Resolved|Retired
+d:G-term a dec:GlossaryTerm ; rdfs:label "Term" ; dec:definition "Meaning." .
+d:Q-1 a dec:OpenQuestion ; dec:text "Question." .
