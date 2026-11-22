@@ -1,7 +1,7 @@
 {
   "name": "development-tools",
   "description": "Development utilities (4 skills): bug fixing, debugging, experimentation, remote notebooks",
-  "version": "sha256:fb076978dad27dd6",
+  "version": "sha256:400aace2d15fadd0",
   "author": {
     "name": "AIGENSA",
     "email": "thesolutionarchitect@aigensa.com"
