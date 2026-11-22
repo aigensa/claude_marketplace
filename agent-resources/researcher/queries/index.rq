@@ -1,0 +1,9 @@
+PREFIX dec: <urn:researcher:decision#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?number ?status ?date ?confidence ?outcome ?supersededBy
+WHERE {
+  ?d a dec:Decision ; dec:number ?number ; dec:status ?status ; dec:date ?date ;
+     dec:confidence ?confidence ; dec:outcome ?outcome .
+  OPTIONAL { ?d dec:supersededBy ?s . ?s dec:number ?supersededBy }
+}
+ORDER BY ?number

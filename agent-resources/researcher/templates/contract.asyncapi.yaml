@@ -1,0 +1,31 @@
+# docs/contracts/<name>-vN.asyncapi.yaml. Events and messages (WebSocket, queues, progress events).
+asyncapi: 3.0.0
+info:
+  title: <Contract name>
+  version: 1.0.0
+  description: <What this contract fixes. One sentence.>
+servers:
+  local:
+    host: localhost:8080
+    protocol: ws
+channels:
+  session:
+    address: /ws
+    messages:
+      result:
+        $ref: '#/components/messages/result'
+operations:
+  receiveResult:
+    action: receive
+    description: Client receives the final result.
+    channel:
+      $ref: '#/channels/session'
+components:
+  messages:
+    result:
+      payload:
+        type: object
+        required: [status]
+        properties:
+          status:
+            type: string

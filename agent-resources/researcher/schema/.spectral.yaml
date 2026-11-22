@@ -1,0 +1,12 @@
+# Spectral ruleset for researcher contracts. Errors fail. Noisy style rules off.
+extends: ["spectral:oas", "spectral:asyncapi"]
+rules:
+  oas3-api-servers: off
+  info-contact: off
+  oas3-unused-component: off
+  operation-tags: off
+  asyncapi-servers: off
+  asyncapi-3-tags: off
+  asyncapi-info-contact: off
+  asyncapi-info-license: off
+  asyncapi-latest-version: off

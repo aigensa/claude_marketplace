@@ -1,0 +1,48 @@
+# docs/decisions/NNNN-slug.ttl. One decision. Typed nodes, no prose sections.
+# New facts, constraints, assumptions, unknowns go in context.ttl. Reference them by IRI.
+@prefix dec:  <urn:researcher:decision#> .
+@prefix d:    <urn:decisions:> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+d:D9999 a dec:Decision ;
+    dec:number 9999 ;                                  # integer, unique. 9999 and D9999 are placeholders: replace with the real number
+    dec:date "YYYY-MM-DD"^^xsd:date ;
+    dec:status dec:Proposed ;                          # Proposed|Accepted|Superseded|Rejected
+    dec:confidence dec:Medium ;                        # High|Medium|Low
+    dec:reversibility dec:Easy ;                       # Easy|Hard
+    dec:sensitivity dec:NotApplicable ;                # Robust|Fragile|NotApplicable
+    dec:touchesInterface false ;                       # true => dec:contract + dec:consumer required (number >= 3)
+    # dec:contract "docs/contracts/name-v1.openapi.yaml" ;   # .pyi / .d.ts (library API) or OpenAPI 3.1 / AsyncAPI 3 (wire)
+    # dec:consumer "aigensa/harness-http" ;                   # downstream layer, or "none"
+    dec:question "One sentence." ;
+    dec:outcome "One line." ;
+    dec:note "Optional. Short." ;
+    dec:chosen d:D9999-O2 ;                            # omit only if status is Rejected
+    dec:option d:D9999-O1, d:D9999-O2 ;                # >=2, one with dec:statusQuo true
+    dec:decisiveFact d:F-1 ;                           # facts the decision rests on (grade A/B)
+    dec:uses d:F-1, d:C-1, d:A-1, d:U-1 ;              # every context item relied on
+    dec:criterion d:D9999-K1 ;                         # only when >=2 options survive
+    dec:score d:D9999-S11 ;
+    dec:minimality d:D9999-M ;
+    dec:revisitTrigger d:D9999-R1 ;
+    dec:consequence d:D9999-Q1 .
+    # dec:supersedes d:D000M ;   dec:supersededBy d:D000P ;   (status Superseded needs supersededBy)
+    # dec:formalModel """z3 script""" ; dec:formalStatus dec:Unverified .
+
+d:D9999-O1 a dec:Option ; rdfs:label "O-1" ; dec:summary "Status quo." ; dec:statusQuo true ;
+    dec:eliminatedBy d:C-1 ;                           # HARD constraints only
+    dec:eliminatedUnder d:A-1 ;                        # optional: elimination holds only if A-1 holds
+    dec:eliminationReason "Why it fails C-1." .
+d:D9999-O2 a dec:Option ; rdfs:label "O-2" ; dec:summary "Chosen option." .
+
+d:D9999-K1 a dec:Criterion ; rdfs:label "Simplicity" ; dec:weight 1.0 ;   # weights sum to 1
+    dec:weightReason "Why this weight." ; dec:grounds d:C-1 .             # Fact or Constraint
+d:D9999-S11 a dec:Score ; dec:scoreOption d:D9999-O2 ; dec:scoreCriterion d:D9999-K1 ;
+    dec:value 4 ; dec:evidence d:F-1 .                                    # 0-5, cite Facts
+
+d:D9999-M a dec:MinimalityClaim ; dec:modelFact d:F-1 ; dec:optionSet d:D9999-O1, d:D9999-O2 ;
+    dec:metric "Cost metric." ; dec:claimType dec:Minimum .               # Minimum|Irreducible
+
+d:D9999-R1 a dec:RevisitTrigger ; dec:text "Condition that reopens this." ; dec:dependsOn d:A-1 .
+d:D9999-Q1 a dec:Consequence ; dec:kind dec:Gain ; dec:text "Effect." .   # Gain|Cost|Risk
