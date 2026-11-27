@@ -1,0 +1,22 @@
+# docs/decisions/context.ttl. Running context. IDs global and stable.
+# Retire items (dec:itemStatus dec:Retired + dec:retiredOn + dec:retiredReason). Never delete.
+@prefix dec:  <urn:researcher:decision#> .
+@prefix d:    <urn:decisions:> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# ---------------- Facts ----------------
+# A Grade A fact of a story/seq decision needs a probe. This one is true as long as the
+# schema file declares its version; `verify_facts.sh --stamp` pins dec:atCommit once committed.
+d:F-1 a dec:Fact ; dec:text "The decision schema declares an owl:versionInfo." ;
+    dec:source "docs/decisions/schema/decision.ttl" ; dec:grade dec:GradeA ;
+    dec:accessed "2026-01-01"^^xsd:date ; dec:itemStatus dec:Active ; dec:originDecision d:D1-1 ;
+    dec:probe d:P-1 .
+d:P-1 a dec:Probe ; dec:probeKind dec:GrepProbe ;
+    dec:probeTarget "docs/decisions/schema/decision.ttl" ;
+    dec:probePattern "owl:versionInfo" ; dec:probeExpect dec:Present .
+
+# ---------------- Constraints ----------------
+d:C-1 a dec:Constraint ; dec:text "Sample constraint: the toolchain must pass on a fresh repository." ;
+    dec:strength dec:SoftConstraint ;
+    dec:itemStatus dec:Active ; dec:originDecision d:D1-1 .

@@ -1,0 +1,16 @@
+# ---- formal verification of decision records (wire-up-formal-verification) ----
+# Add these recipes to the justfile, then add `decisions` to the `check` dependency list,
+# e.g.  check: fmt-check lint test decisions
+
+# SHACL structure + contract files, fact probes against code, Z3 scoring checks
+decisions:
+    uv run --quiet --with pyshacl --with rdflib python -I scripts/validate_decisions.py docs/decisions
+    scripts/verify_facts.sh docs/decisions
+    uv run --quiet --with z3-solver --with rdflib python -I scripts/verify_scoring.py docs/decisions
+
+# OPTIONAL, not part of `check`: run model starters (needs java for Alloy/TLC, lean/lake for Lean).
+# Each starter documents its own command in its header; adjust jar paths to your install.
+models:
+    java -jar "${ALLOY_JAR:?set ALLOY_JAR to alloy.jar}" exec -f models/alloy/run_lifecycle.als
+    cd models/tla && java -cp "${TLA2TOOLS_JAR:?set TLA2TOOLS_JAR to tla2tools.jar}" tlc2.TLC -config outbox.cfg outbox.tla
+    cd models/lean && lean Migrate.lean

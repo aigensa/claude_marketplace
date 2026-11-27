@@ -1,0 +1,52 @@
+# Sample record. Delete or replace once a real decision exists (keep context.ttl).
+# Identity: story 1, seq 1 -> IRI urn:decisions:D1-1 (no zero padding).
+@prefix dec:  <urn:researcher:decision#> .
+@prefix d:    <urn:decisions:> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+d:D1-1 a dec:Decision ;
+    dec:story 1 ;
+    dec:seq 1 ;
+    dec:date "2026-01-01"^^xsd:date ;
+    dec:status dec:Proposed ;
+    dec:confidence dec:Medium ;
+    dec:reversibility dec:Easy ;
+    dec:sensitivity dec:Robust ;
+    dec:touchesInterface false ;
+    dec:question "Keep the current approach or replace it?" ;
+    dec:outcome "Keep the current approach." ;
+    dec:chosen d:D1-1-O1 ;
+    dec:option d:D1-1-O1, d:D1-1-O2 ;
+    dec:decisiveFact d:F-1 ;
+    dec:uses d:F-1, d:C-1 ;
+    dec:criterion d:D1-1-K1, d:D1-1-K2 ;
+    dec:score d:D1-1-S11, d:D1-1-S12, d:D1-1-S21, d:D1-1-S22 ;
+    dec:minimality d:D1-1-M ;
+    dec:revisitTrigger d:D1-1-R1 ;
+    dec:consequence d:D1-1-Q1 .
+
+d:D1-1-O1 a dec:Option ; rdfs:label "O-1" ; dec:statusQuo true ;
+    dec:summary "Keep the current approach." .
+d:D1-1-O2 a dec:Option ; rdfs:label "O-2" ;
+    dec:summary "Replace it." .
+
+# Weights sum to 1. Scores are integers 0..5, one per (surviving option, criterion).
+d:D1-1-K1 a dec:Criterion ; rdfs:label "Change size" ; dec:weight 0.6 ;
+    dec:weightReason "Sample: smaller change preferred." ; dec:grounds d:C-1 .
+d:D1-1-K2 a dec:Criterion ; rdfs:label "Fit" ; dec:weight 0.4 ;
+    dec:weightReason "Sample: fit matters less than size." ; dec:grounds d:C-1 .
+
+d:D1-1-S11 a dec:Score ; dec:scoreOption d:D1-1-O1 ; dec:scoreCriterion d:D1-1-K1 ; dec:value 5 ; dec:evidence d:F-1 .
+d:D1-1-S12 a dec:Score ; dec:scoreOption d:D1-1-O1 ; dec:scoreCriterion d:D1-1-K2 ; dec:value 4 ; dec:evidence d:F-1 .
+d:D1-1-S21 a dec:Score ; dec:scoreOption d:D1-1-O2 ; dec:scoreCriterion d:D1-1-K1 ; dec:value 2 ; dec:evidence d:F-1 .
+d:D1-1-S22 a dec:Score ; dec:scoreOption d:D1-1-O2 ; dec:scoreCriterion d:D1-1-K2 ; dec:value 3 ; dec:evidence d:F-1 .
+
+d:D1-1-M a dec:MinimalityClaim ; dec:modelFact d:F-1 ;
+    dec:optionSet d:D1-1-O1, d:D1-1-O2 ;
+    dec:metric "K1 0.6, K2 0.4. O-1 4.60, O-2 2.40. O-1 dominates on both criteria. Robust." ;
+    dec:claimType dec:Minimum .
+
+d:D1-1-R1 a dec:RevisitTrigger ; dec:text "Sample: revisit if the replacement becomes cheaper than the status quo." .
+
+d:D1-1-Q1 a dec:Consequence ; dec:kind dec:Gain ; dec:text "Sample: no change needed." .

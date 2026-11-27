@@ -127,6 +127,17 @@
         "name": "AIGENSA",
         "email": "thesolutionarchitect@aigensa.com"
       }
+    },
+    {
+      "name": "verification",
+      "source": "./bundles/verification",
+      "description": "Formal verification (1 skill): verify:wire-up-formal-verification — SHACL decision records, fact probes, Z3 scoring checks, optional Alloy/TLA+/Lean models",
+      "version": "1.0.0",
+      "category": "development",
+      "author": {
+        "name": "AIGENSA",
+        "email": "thesolutionarchitect@aigensa.com"
+      }
     }
   ]
 }

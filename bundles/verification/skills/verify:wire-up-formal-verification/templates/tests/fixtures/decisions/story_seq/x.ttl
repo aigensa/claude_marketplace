@@ -1,0 +1,12 @@
+@prefix dec: <urn:researcher:decision#> .
+@prefix d: <urn:decisions:> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+d:D9-1 a dec:Decision ; dec:story 9 ; dec:seq 1 ; dec:chosen d:D9-1-O1 ; dec:sensitivity dec:Robust ; dec:status dec:Proposed ;
+  dec:option d:D9-1-O1, d:D9-1-O2 ; dec:criterion d:D9-1-K1, d:D9-1-K2 .
+d:D9-1-O1 a dec:Option . d:D9-1-O2 a dec:Option .
+d:D9-1-K1 a dec:Criterion ; dec:weight 0.5 . d:D9-1-K2 a dec:Criterion ; dec:weight 0.5 .
+d:D9-1-S1 a dec:Score ; dec:scoreOption d:D9-1-O1 ; dec:scoreCriterion d:D9-1-K1 ; dec:value 5 .
+d:D9-1-S2 a dec:Score ; dec:scoreOption d:D9-1-O1 ; dec:scoreCriterion d:D9-1-K2 ; dec:value 4 .
+d:D9-1-S3 a dec:Score ; dec:scoreOption d:D9-1-O2 ; dec:scoreCriterion d:D9-1-K1 ; dec:value 1 .
+d:D9-1-S4 a dec:Score ; dec:scoreOption d:D9-1-O2 ; dec:scoreCriterion d:D9-1-K2 ; dec:value 1 .
+d:D9-1 dec:score d:D9-1-S1, d:D9-1-S2, d:D9-1-S3, d:D9-1-S4 .
