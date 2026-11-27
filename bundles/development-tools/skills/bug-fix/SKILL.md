@@ -225,7 +225,7 @@ to > instead of >= comparison. Changed to >= to match RFC 7519 spec.
 
 Fixes #123
 
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
 ```
 
 **Link to bug issue:**
@@ -240,31 +240,9 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 /mr
 ```
 
-**PR description should include:**
-```markdown
-## Bug Fix: Authentication fails with expired tokens
+**PR description:**
 
-Fixes #123
-
-## Problem
-Tokens were incorrectly accepted for 1 second after expiration due to
-off-by-one error in comparison operator.
-
-## Solution
-Changed token expiration check from `>` to `>=` to properly reject
-tokens at exact expiration time per RFC 7519.
-
-## Testing
-- ✅ Added regression tests for exact expiration, past expiration, future expiration
-- ✅ Added edge case test for epoch 0 expiration
-- ✅ All tests pass
-- ✅ Full test suite passes without regressions
-
-## Impact
-- Security: Tokens now properly expire at specified time
-- Users: No impact on valid tokens
-- Breaking: None
-```
+Use the template in @templates/pr-description.md.
 
 ## Configuration
 
@@ -302,48 +280,7 @@ pr:
 
 ## Error Handling
 
-**No bugs found:**
-```
-❌ No open bugs found in backlog with label "bug"
-
-Try:
-- Check if bugs use different labels
-- Verify GitHub CLI authentication
-- Look for closed bugs that need reopening
-```
-
-**Investigation fails:**
-```
-⚠️  Unable to locate bug in codebase
-
-Options:
-1. Provide more details about where to search
-2. Share reproduction steps
-3. Link to related files or error logs
-```
-
-**Tests cannot be created:**
-```
-🛑 BLOCKED: Cannot commit without regression tests
-
-Regression tests are REQUIRED for all bug fixes. Please:
-1. Identify test framework (Jest, pytest, etc.)
-2. Locate existing test files for reference
-3. Write tests that reproduce the bug
-4. Verify tests fail before fix, pass after fix
-```
-
-**Tests fail after fix:**
-```
-❌ Tests still failing after applying fix
-
-This suggests:
-- Fix is incomplete
-- Fix introduced new bugs
-- Tests need adjustment
-
-Review and iterate before committing.
-```
+See @references/error-handling.md.
 
 ## Best Practices
 
@@ -377,172 +314,11 @@ Review and iterate before committing.
 
 ## Examples
 
-### Example 1: Logic Error Bug
-
-**Bug report:** "Search returns 11 results when limit=10"
-
-**Investigation:**
-- Located: `src/api/search.ts:45`
-- Root cause: Loop condition `i <= limit` instead of `i < limit`
-
-**Fix:**
-```typescript
-// Before
-for (let i = 0; i <= limit; i++) {
-
-// After
-for (let i = 0; i < limit; i++) {
-```
-
-**Regression tests:**
-```typescript
-describe('Bug #156: Search limit off-by-one', () => {
-  it('should return exactly 10 results when limit=10', () => {
-    const results = search('query', { limit: 10 });
-    expect(results).toHaveLength(10);
-  });
-
-  it('should return exactly 1 result when limit=1', () => {
-    const results = search('query', { limit: 1 });
-    expect(results).toHaveLength(1);
-  });
-
-  it('should handle limit=0', () => {
-    const results = search('query', { limit: 0 });
-    expect(results).toHaveLength(0);
-  });
-});
-```
-
-### Example 2: Missing Validation Bug
-
-**Bug report:** "App crashes when uploading 0-byte file"
-
-**Investigation:**
-- Located: `src/upload/handler.ts:78`
-- Root cause: No validation for empty files
-
-**Fix:**
-```typescript
-async function handleUpload(file: File) {
-  // Add validation
-  if (file.size === 0) {
-    throw new Error('Cannot upload empty file');
-  }
-
-  // Existing upload logic
-  await processFile(file);
-}
-```
-
-**Regression tests:**
-```typescript
-describe('Bug #201: Empty file upload crash', () => {
-  it('should reject empty file with clear error', async () => {
-    const emptyFile = new File([], 'empty.txt');
-
-    await expect(handleUpload(emptyFile))
-      .rejects.toThrow('Cannot upload empty file');
-  });
-
-  it('should accept file with content', async () => {
-    const validFile = new File(['content'], 'valid.txt');
-
-    await expect(handleUpload(validFile))
-      .resolves.not.toThrow();
-  });
-
-  it('should accept 1-byte file (edge case)', async () => {
-    const tinyFile = new File(['a'], 'tiny.txt');
-
-    await expect(handleUpload(tinyFile))
-      .resolves.not.toThrow();
-  });
-});
-```
-
-### Example 3: Race Condition Bug
-
-**Bug report:** "Occasionally get duplicate entries in database"
-
-**Investigation:**
-- Located: `src/db/insert.ts:92`
-- Root cause: No locking or uniqueness check before insert
-
-**Fix:**
-```typescript
-async function insertUser(data: UserData) {
-  // Add unique constraint check
-  const existing = await db.user.findUnique({
-    where: { email: data.email }
-  });
-
-  if (existing) {
-    throw new Error(`User with email ${data.email} already exists`);
-  }
-
-  return db.user.create({ data });
-}
-```
-
-**Regression tests:**
-```typescript
-describe('Bug #178: Duplicate user entries race condition', () => {
-  it('should prevent duplicate users with same email', async () => {
-    const userData = { email: 'test@example.com', name: 'Test' };
-
-    await insertUser(userData);
-
-    await expect(insertUser(userData))
-      .rejects.toThrow('already exists');
-  });
-
-  it('should allow multiple users with different emails', async () => {
-    await insertUser({ email: 'user1@example.com', name: 'User 1' });
-    await insertUser({ email: 'user2@example.com', name: 'User 2' });
-
-    const users = await db.user.findMany();
-    expect(users).toHaveLength(2);
-  });
-
-  it('should handle concurrent insert attempts', async () => {
-    const userData = { email: 'concurrent@example.com', name: 'Test' };
-
-    const promises = Array(5).fill(null).map(() =>
-      insertUser(userData).catch(e => e)
-    );
-
-    const results = await Promise.all(promises);
-    const successes = results.filter(r => !(r instanceof Error));
-
-    expect(successes).toHaveLength(1);
-  });
-});
-```
+See @references/examples.md (logic error, missing validation, race condition).
 
 ## Troubleshooting
 
-**Issue: Can't find the bug in codebase**
-- Try broader search terms
-- Search error messages in logs
-- Check recently modified files
-- Ask user for more context
-
-**Issue: Fix seems too complex**
-- Reassess root cause - might be misunderstood
-- Consider if refactoring is truly needed
-- Ask user if simpler approach acceptable
-
-**Issue: Tests are flaky**
-- Add proper setup/teardown
-- Mock external dependencies
-- Use deterministic test data
-- Add delays for async operations if needed
-
-**Issue: Fix breaks other tests**
-- Review what broke - might reveal larger issue
-- Consider if original code had hidden dependencies
-- May need to update other tests
+See @references/troubleshooting.md.
 
 ## Integration with Other Skills
 
@@ -555,4 +331,4 @@ describe('Bug #178: Duplicate user entries race condition', () => {
 
 - See @references/testing-best-practices.md for test patterns
 - See @references/bug-investigation.md for debugging techniques
-- See @references/examples.md for more bug fix examples
+- See @references/examples.md, @references/error-handling.md, @references/troubleshooting.md and @templates/pr-description.md
