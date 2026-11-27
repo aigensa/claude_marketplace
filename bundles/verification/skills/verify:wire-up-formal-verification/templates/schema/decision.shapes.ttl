@@ -1,0 +1,249 @@
+@prefix dec:  <urn:researcher:decision#> .
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix shp:  <urn:researcher:shapes#> .
+
+
+# SPARQL prefixes for sh:sparql constraints
+<urn:researcher:shapes> sh:declare
+  [ sh:prefix "dec" ; sh:namespace "urn:researcher:decision#"^^xsd:anyURI ] .
+
+# ======================= Decision =======================
+shp:DecisionShape a sh:NodeShape ;
+  sh:targetClass dec:Decision ;
+  sh:property
+    [ sh:path dec:number ;        sh:datatype xsd:integer ; sh:maxCount 1 ; sh:minInclusive 1 ] ,
+    [ sh:path dec:story ;         sh:datatype xsd:integer ; sh:maxCount 1 ; sh:minInclusive 1 ; sh:maxInclusive 9999 ] ,
+    [ sh:path dec:seq ;           sh:datatype xsd:integer ; sh:maxCount 1 ; sh:minInclusive 1 ; sh:maxInclusive 9999 ] ,
+    [ sh:path dec:question ;      sh:datatype xsd:string ;  sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:date ;          sh:datatype xsd:date ;    sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:outcome ;       sh:datatype xsd:string ;  sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:status ;        sh:class dec:Status ;     sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:confidence ;    sh:class dec:Confidence ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:reversibility ; sh:class dec:Reversibility ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:sensitivity ;   sh:class dec:Sensitivity ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:option ;        sh:class dec:Option ;     sh:minCount 2 ;
+      sh:qualifiedValueShape [ sh:property [ sh:path dec:statusQuo ; sh:hasValue true ] ] ;
+      sh:qualifiedMinCount 1 ;
+      sh:message "Decision needs >=2 options and one status-quo option." ] ,
+    [ sh:path dec:chosen ;        sh:class dec:Option ;     sh:maxCount 1 ] ,
+    [ sh:path dec:minimality ;    sh:class dec:MinimalityClaim ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:revisitTrigger ; sh:class dec:RevisitTrigger ; sh:minCount 1 ] ,
+    [ sh:path dec:supersededBy ;  sh:class dec:Decision ;   sh:maxCount 1 ] ,
+    [ sh:path dec:supersedes ;    sh:class dec:Decision ] ,
+    [ sh:path dec:decisiveFact ;  sh:class dec:Fact ;       sh:minCount 1 ] ,
+    [ sh:path dec:touchesInterface ; sh:datatype xsd:boolean ; sh:maxCount 1 ] ,
+    [ sh:path dec:contract ;      sh:datatype xsd:string ;
+      sh:pattern "^docs/contracts/[^/]+(\\.(openapi|asyncapi)\\.(yaml|yml|json)|\\.pyi|\\.d\\.ts)$" ;
+      sh:message "dec:contract must be docs/contracts/<name>.(openapi|asyncapi).(yaml|yml|json) or <name>.pyi or <name>.d.ts." ] ,
+    [ sh:path dec:consumer ;      sh:datatype xsd:string ] ,
+    [ sh:path dec:uses ;
+      sh:or ( [ sh:class dec:Fact ] [ sh:class dec:Constraint ] [ sh:class dec:Assumption ] [ sh:class dec:Unknown ] ) ;
+      sh:message "dec:uses target must be a typed Fact, Constraint, Assumption or Unknown (define it in context.ttl)." ] ;
+  sh:sparql
+  [ sh:message "Chosen option is not in the decision's option list." ;
+    sh:select """SELECT $this WHERE { $this dec:chosen ?c . FILTER NOT EXISTS { $this dec:option ?c } }""" ] ,
+  [ sh:message "Chosen option is eliminated." ;
+    sh:select """SELECT $this WHERE { $this dec:chosen ?c . ?c dec:eliminatedBy ?x }""" ] ,
+  [ sh:message "Non-rejected decision needs dec:chosen." ;
+    sh:select """SELECT $this WHERE { $this dec:status ?s . FILTER(?s != dec:Rejected) FILTER NOT EXISTS { $this dec:chosen ?c } }""" ] ,
+  [ sh:message "Criterion weights must sum to 1 (+-0.001)." ;
+    sh:select """SELECT $this WHERE { $this dec:criterion ?c . ?c dec:weight ?w . } GROUP BY $this HAVING (ABS(SUM(?w) - 1) > 0.001)""" ] ,
+  [ sh:message "Confidence HIGH requires sensitivity Robust or NotApplicable (not Fragile)." ;
+    sh:select """SELECT $this WHERE { $this dec:confidence dec:High ; dec:sensitivity dec:Fragile }""" ] ,
+  [ sh:message "Confidence above LOW needs at least one decisive fact of grade A or B." ;
+    sh:select """SELECT $this WHERE { $this dec:confidence ?cf . FILTER(?cf != dec:Low) FILTER NOT EXISTS { $this dec:decisiveFact ?f . ?f dec:grade ?g . FILTER(?g IN (dec:GradeA, dec:GradeB)) } }""" ] ,
+  [ sh:message "Hard-to-reverse decision needs at least one decisive fact of grade A." ;
+    sh:select """SELECT $this WHERE { $this dec:reversibility dec:Hard . FILTER NOT EXISTS { $this dec:decisiveFact ?f . ?f dec:grade dec:GradeA } }""" ] ,
+  [ sh:message "Decision needs identity: dec:number, or both dec:story and dec:seq (not mixed)." ;
+    sh:select """SELECT $this WHERE { FILTER NOT EXISTS { $this dec:number ?n } FILTER NOT EXISTS { $this dec:story ?s . $this dec:seq ?q } }""" ] ,
+  [ sh:message "dec:number may not be combined with dec:story/dec:seq." ;
+    sh:select """SELECT $this WHERE { $this dec:number ?n . { $this dec:story ?s } UNION { $this dec:seq ?s } }""" ] ,
+  [ sh:message "dec:story and dec:seq must both be present." ;
+    sh:select """SELECT $this WHERE { { $this dec:story ?s . FILTER NOT EXISTS { $this dec:seq ?q } } UNION { $this dec:seq ?q . FILTER NOT EXISTS { $this dec:story ?s } } }""" ] ,
+  [ sh:message "Decision IRI must be urn:decisions:D<story>-<seq> (no padding)." ;
+    sh:select """SELECT $this WHERE { $this dec:story ?s ; dec:seq ?q . FILTER(STR($this) != CONCAT("urn:decisions:D", STR(?s), "-", STR(?q))) }""" ] ,
+  [ sh:message "Two decisions share the same (dec:story, dec:seq)." ;
+    sh:select """SELECT $this WHERE { $this dec:story ?s ; dec:seq ?q . ?o dec:story ?s ; dec:seq ?q . FILTER(?o != $this) }""" ] ,
+  [ sh:message "Decision number >=3, or any story/seq decision, must state dec:touchesInterface." ;
+    sh:select """SELECT $this WHERE { { $this dec:number ?n . FILTER(?n >= 3) } UNION { $this dec:story ?s } FILTER NOT EXISTS { $this dec:touchesInterface ?t } }""" ] ,
+  [ sh:message "touchesInterface true needs >=1 dec:contract." ;
+    sh:select """SELECT $this WHERE { $this dec:touchesInterface true . FILTER NOT EXISTS { $this dec:contract ?c } }""" ] ,
+  [ sh:message "touchesInterface true needs >=1 dec:consumer (or the literal none)." ;
+    sh:select """SELECT $this WHERE { $this dec:touchesInterface true . FILTER NOT EXISTS { $this dec:consumer ?c } }""" ] ,
+  [ sh:message "Superseded decision needs dec:supersededBy." ;
+    sh:select """SELECT $this WHERE { $this dec:status dec:Superseded . FILTER NOT EXISTS { $this dec:supersededBy ?x } }""" ] ,
+  [ sh:message "dec:supersededBy set but status is not Superseded." ;
+    sh:select """SELECT $this WHERE { $this dec:supersededBy ?x . FILTER NOT EXISTS { $this dec:status dec:Superseded } }""" ] ,
+  [ sh:message "Proposed or Accepted decision uses a Retired context item." ;
+    sh:select """SELECT $this WHERE { $this dec:status ?s . FILTER(?s IN (dec:Proposed, dec:Accepted)) $this (dec:uses|dec:decisiveFact) ?i . ?i dec:itemStatus dec:Retired }""" ] ,
+  [ sh:message "Two decisions share the same dec:number." ;
+    sh:select """SELECT $this WHERE { $this dec:number ?n . ?o dec:number ?n . FILTER(?o != $this) }""" ] ,
+  [ sh:message "Decision has >=2 surviving options but a survivor has no score." ;
+    sh:select """SELECT $this WHERE {
+        $this dec:option ?a . $this dec:option ?b . FILTER(?a != ?b)
+        FILTER NOT EXISTS { ?a dec:eliminatedBy ?x } FILTER NOT EXISTS { ?b dec:eliminatedBy ?y }
+        FILTER NOT EXISTS { $this dec:score ?s . ?s dec:scoreOption ?a } }""" ] .
+
+# ======================= Option =======================
+shp:OptionShape a sh:NodeShape ;
+  sh:targetClass dec:Option ;
+  sh:property
+    [ sh:path rdfs:label ;        sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:summary ;       sh:datatype xsd:string ; sh:minCount 1 ] ,
+    [ sh:path dec:statusQuo ;     sh:datatype xsd:boolean ; sh:maxCount 1 ] ,
+    [ sh:path dec:eliminatedBy ;  sh:class dec:Constraint ;
+      sh:node [ sh:property [ sh:path dec:strength ; sh:hasValue dec:HardConstraint ] ] ;
+      sh:message "dec:eliminatedBy must name a HARD constraint." ] ,
+    [ sh:path dec:eliminatedUnder ; sh:class dec:Assumption ] ,
+    [ sh:path dec:eliminationReason ; sh:datatype xsd:string ; sh:maxCount 1 ] ;
+  sh:sparql
+  [ sh:message "Eliminated option needs dec:eliminationReason." ;
+    sh:select """SELECT $this WHERE { $this dec:eliminatedBy ?c . FILTER NOT EXISTS { $this dec:eliminationReason ?r } }""" ] .
+
+# ======================= Context items =======================
+shp:ItemStatusShape a sh:NodeShape ;
+  sh:targetClass dec:Fact, dec:Constraint, dec:Assumption, dec:Unknown ;
+  sh:property
+    [ sh:path dec:text ;          sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:itemStatus ;    sh:class dec:ItemStatus ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:originDecision ; sh:class dec:Decision ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:retiredOn ;     sh:datatype xsd:date ; sh:maxCount 1 ] ,
+    [ sh:path dec:retiredReason ; sh:datatype xsd:string ; sh:maxCount 1 ] ;
+  sh:sparql
+  [ sh:message "Retired item needs dec:retiredOn and dec:retiredReason." ;
+    sh:select """SELECT $this WHERE { $this dec:itemStatus dec:Retired . FILTER (NOT EXISTS { $this dec:retiredOn ?d } || NOT EXISTS { $this dec:retiredReason ?r }) }""" ] .
+
+shp:FactShape a sh:NodeShape ;
+  sh:targetClass dec:Fact ;
+  sh:property
+    [ sh:path dec:source ;   sh:datatype xsd:string ; sh:minCount 1 ] ,
+    [ sh:path dec:grade ;    sh:class dec:Grade ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:accessed ; sh:datatype xsd:date ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:itemStatus ; sh:in ( dec:Active dec:Retired ) ] .
+
+shp:ConstraintShape a sh:NodeShape ;
+  sh:targetClass dec:Constraint ;
+  sh:property
+    [ sh:path dec:strength ; sh:class dec:Strength ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:itemStatus ; sh:in ( dec:Active dec:Retired ) ] .
+
+shp:AssumptionShape a sh:NodeShape ;
+  sh:targetClass dec:Assumption ;
+  sh:property
+    [ sh:path dec:basis ; sh:class dec:Fact ; sh:minCount 1 ;
+      sh:message "Assumption needs a dec:basis Fact (the reason it was inferred)." ] ,
+    [ sh:path dec:itemStatus ; sh:in ( dec:Active dec:Retired ) ] .
+
+shp:UnknownShape a sh:NodeShape ;
+  sh:targetClass dec:Unknown ;
+  sh:property
+    [ sh:path dec:couldChangeResult ; sh:datatype xsd:boolean ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:itemStatus ; sh:in ( dec:Open dec:Resolved dec:Retired ) ] .
+
+shp:GlossaryShape a sh:NodeShape ;
+  sh:targetClass dec:GlossaryTerm ;
+  sh:property
+    [ sh:path rdfs:label ;     sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:definition ; sh:datatype xsd:string ; sh:minCount 1 ] .
+
+shp:OpenQuestionShape a sh:NodeShape ;
+  sh:targetClass dec:OpenQuestion ;
+  sh:property [ sh:path dec:text ; sh:datatype xsd:string ; sh:minCount 1 ] .
+
+# ======================= Scoring =======================
+shp:CriterionShape a sh:NodeShape ;
+  sh:targetClass dec:Criterion ;
+  sh:property
+    [ sh:path rdfs:label ;       sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:weight ;       sh:datatype xsd:decimal ; sh:minCount 1 ; sh:maxCount 1 ; sh:minInclusive 0 ; sh:maxInclusive 1 ] ,
+    [ sh:path dec:weightReason ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:grounds ;      sh:minCount 1 ;
+      sh:or ( [ sh:class dec:Fact ] [ sh:class dec:Constraint ] ) ] .
+
+shp:ScoreShape a sh:NodeShape ;
+  sh:targetClass dec:Score ;
+  sh:property
+    [ sh:path dec:scoreOption ;    sh:class dec:Option ;    sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:scoreCriterion ; sh:class dec:Criterion ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:value ;          sh:datatype xsd:integer ; sh:minCount 1 ; sh:maxCount 1 ; sh:minInclusive 0 ; sh:maxInclusive 5 ] ,
+    [ sh:path dec:evidence ;       sh:class dec:Fact ;      sh:minCount 1 ;
+      sh:message "Every score cites at least one Fact." ] .
+
+# ======================= Claims, triggers, consequences =======================
+shp:MinimalityShape a sh:NodeShape ;
+  sh:targetClass dec:MinimalityClaim ;
+  sh:property
+    [ sh:path dec:modelFact ; sh:class dec:Fact ;   sh:minCount 1 ] ,
+    [ sh:path dec:optionSet ; sh:class dec:Option ; sh:minCount 2 ] ,
+    [ sh:path dec:metric ;    sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:claimType ; sh:class dec:ClaimType ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+shp:RevisitShape a sh:NodeShape ;
+  sh:targetClass dec:RevisitTrigger ;
+  sh:property
+    [ sh:path dec:text ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:dependsOn ; sh:or ( [ sh:class dec:Assumption ] [ sh:class dec:Unknown ] ) ] .
+
+shp:ConsequenceShape a sh:NodeShape ;
+  sh:targetClass dec:Consequence ;
+  sh:property
+    [ sh:path dec:kind ; sh:class dec:ConsequenceKind ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:text ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+# ======================= Probes (v4) =======================
+shp:FactProbeShape a sh:NodeShape ;
+  sh:targetClass dec:Fact ;
+  sh:property
+    [ sh:path dec:probe ;     sh:class dec:Probe ] ,
+    [ sh:path dec:atCommit ;  sh:datatype xsd:string ; sh:maxCount 1 ; sh:pattern "^[0-9a-f]{40}$" ] ,
+    [ sh:path dec:driftedTo ; sh:class dec:Fact ; sh:maxCount 1 ] ;
+  sh:sparql
+  [ sh:message "Grade A fact of decision number >=5 (or any story/seq decision) needs at least one dec:probe." ;
+    sh:select """SELECT $this WHERE { $this dec:grade dec:GradeA ; dec:originDecision ?d . { ?d dec:number ?n . FILTER(?n >= 5) } UNION { ?d dec:story ?s } FILTER NOT EXISTS { $this dec:probe ?p } }""" ] ,
+  [ sh:message "dec:driftedTo may not point at the fact itself." ;
+    sh:select """SELECT $this WHERE { $this dec:driftedTo $this }""" ] .
+
+shp:ProbeShape a sh:NodeShape ;
+  sh:targetClass dec:Probe ;
+  sh:property
+    [ sh:path dec:probeKind ;   sh:class dec:ProbeKind ; sh:minCount 1 ; sh:maxCount 1 ] ,
+    [ sh:path dec:probeTarget ; sh:datatype xsd:string ; sh:maxCount 1 ;
+      sh:pattern "^(https://[^\\s]+|[A-Za-z0-9_.\\-][A-Za-z0-9_./+\\-]*)$" ;
+      sh:message "dec:probeTarget must be a repo-relative path (not absolute) or an https URL." ] ,
+    [ sh:path dec:probePattern ;  sh:datatype xsd:string ; sh:maxCount 1 ] ,
+    [ sh:path dec:probeExpect ;   sh:class dec:Expect ; sh:maxCount 1 ] ,
+    [ sh:path dec:probeMinCount ; sh:datatype xsd:integer ; sh:maxCount 1 ; sh:minInclusive 1 ] ,
+    [ sh:path dec:probeSha256 ;   sh:datatype xsd:string ; sh:maxCount 1 ; sh:pattern "^[0-9a-f]{64}$" ] ,
+    [ sh:path dec:probeKeyPath ;  sh:datatype xsd:string ; sh:maxCount 1 ] ,
+    [ sh:path dec:probeExpected ; sh:datatype xsd:string ; sh:maxCount 1 ] ,
+    [ sh:path dec:probeTestId ;   sh:datatype xsd:string ; sh:maxCount 1 ] ;
+  sh:sparql
+  [ sh:message "Grep probe needs dec:probeTarget, dec:probePattern, dec:probeExpect." ;
+    sh:select """SELECT $this WHERE { $this dec:probeKind dec:GrepProbe . FILTER (NOT EXISTS { $this dec:probeTarget ?a } || NOT EXISTS { $this dec:probePattern ?b } || NOT EXISTS { $this dec:probeExpect ?c }) }""" ] ,
+  [ sh:message "Hash probe needs dec:probeTarget and dec:probeSha256." ;
+    sh:select """SELECT $this WHERE { $this dec:probeKind dec:HashProbe . FILTER (NOT EXISTS { $this dec:probeTarget ?a } || NOT EXISTS { $this dec:probeSha256 ?b }) }""" ] ,
+  [ sh:message "Key probe needs dec:probeTarget, dec:probeKeyPath, dec:probeExpected." ;
+    sh:select """SELECT $this WHERE { $this dec:probeKind dec:KeyProbe . FILTER (NOT EXISTS { $this dec:probeTarget ?a } || NOT EXISTS { $this dec:probeKeyPath ?b } || NOT EXISTS { $this dec:probeExpected ?c }) }""" ] ,
+  [ sh:message "Test probe needs dec:probeTestId." ;
+    sh:select """SELECT $this WHERE { $this dec:probeKind dec:TestProbe . FILTER NOT EXISTS { $this dec:probeTestId ?a } }""" ] ,
+  [ sh:message "dec:probeTarget must not contain .. (path traversal)." ;
+    sh:select """SELECT $this WHERE { $this dec:probeTarget ?t . FILTER(CONTAINS(?t, "..")) }""" ] .
+
+# ======================= Confirmation (v5) =======================
+shp:ConfirmationShape a sh:NodeShape ;
+  sh:targetClass dec:Fact ;
+  sh:property
+    [ sh:path dec:confirmedBy ;   sh:class dec:ConfirmationKind ; sh:maxCount 1 ] ,
+    [ sh:path dec:confirmedOn ;   sh:datatype xsd:date ; sh:maxCount 1 ] ,
+    [ sh:path dec:confirmedNote ; sh:datatype xsd:string ; sh:maxCount 1 ] ;
+  sh:sparql
+  [ sh:message "dec:confirmedBy needs dec:confirmedOn and dec:confirmedNote." ;
+    sh:select """SELECT $this WHERE { $this dec:confirmedBy ?k . FILTER (NOT EXISTS { $this dec:confirmedOn ?d } || NOT EXISTS { $this dec:confirmedNote ?n }) }""" ] .
+
+shp:AcceptedDecisionShape a sh:NodeShape ;
+  sh:targetClass dec:Decision ;
+  sh:sparql
+  [ sh:message "Accepted decision rests on a decisive Fact that is not confirmed (needs dec:atCommit from a passing probe, or dec:confirmedBy)." ;
+    sh:select """SELECT $this WHERE { $this dec:status dec:Accepted ; dec:decisiveFact ?f . FILTER NOT EXISTS { ?f dec:atCommit ?c } FILTER NOT EXISTS { ?f dec:confirmedBy ?k } }""" ] .

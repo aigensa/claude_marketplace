@@ -1,0 +1,19 @@
+{
+  "name": "verification",
+  "description": "Formal verification (1 skill): verify:wire-up-formal-verification \u2014 scaffold SHACL-checked decision records, git-aware fact probes, Z3 scoring checks, and optional Alloy/TLA+/Lean models",
+  "version": "sha256:0acfac276c60aded",
+  "author": {
+    "name": "AIGENSA",
+    "email": "thesolutionarchitect@aigensa.com"
+  },
+  "homepage": "https://github.com/aigensa/claude_marketplace",
+  "repository": "https://github.com/aigensa/claude_marketplace",
+  "license": "MIT",
+  "keywords": [
+    "verification",
+    "shacl",
+    "z3",
+    "decision-records",
+    "formal-methods"
+  ]
+}

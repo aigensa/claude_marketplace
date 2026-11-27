@@ -36,6 +36,7 @@ This repo is a **custom Claude Code plugin marketplace** — a centralized colle
 | `content-specialized` | 5 | Content creation and specialized tools — writing, documentation, CUDA |
 | `design` | 4 | Design tools — CSS architecture, design systems, UX, content images |
 | `mobile` | 2 | Mobile testing — Android (Chromium) and iOS (WebKit) layout test automation |
+| `verification` | 1 | Formal verification — scaffold SHACL-checked decision records, git-aware fact probes, Z3 scoring checks, and optional Alloy/TLA+/Lean models |
 | `agile-team` | 11 | Agile dev team — full 5-agent TDD team or individual agents for controlled, single-agent delegation; `/pm build` orchestrates a fleet of specialist agents driven by the architect's implementation plan; `/pm:pull-request` routes PR creation to the active issue tracker |
 
 ## How Skill Resolution Works

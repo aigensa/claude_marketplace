@@ -1,0 +1,146 @@
+@prefix dec:  <urn:researcher:decision#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:researcher:decision> a owl:Ontology ;
+    owl:versionInfo "5" ;
+    rdfs:comment "Decision-log ontology. Instances live in docs/decisions/*.ttl. Shapes: decision.shapes.ttl." .
+
+# ---- Classes ----
+dec:Decision        a owl:Class .
+dec:Option          a owl:Class .
+dec:Fact            a owl:Class .
+dec:Constraint      a owl:Class .
+dec:Assumption      a owl:Class .
+dec:Unknown         a owl:Class .
+dec:Criterion       a owl:Class .
+dec:Score           a owl:Class .
+dec:MinimalityClaim a owl:Class .
+dec:RevisitTrigger  a owl:Class .
+dec:Consequence     a owl:Class .
+dec:GlossaryTerm    a owl:Class .
+dec:OpenQuestion    a owl:Class .
+
+# ---- Enumerations (named individuals) ----
+dec:Status        a owl:Class .
+dec:Proposed a dec:Status . dec:Accepted a dec:Status . dec:Superseded a dec:Status . dec:Rejected a dec:Status .
+dec:Confidence    a owl:Class .
+dec:High a dec:Confidence . dec:Medium a dec:Confidence . dec:Low a dec:Confidence .
+dec:Reversibility a owl:Class .
+dec:Easy a dec:Reversibility . dec:Hard a dec:Reversibility .
+dec:Strength      a owl:Class .
+dec:HardConstraint a dec:Strength . dec:SoftConstraint a dec:Strength .
+dec:Grade         a owl:Class .
+dec:GradeA a dec:Grade . dec:GradeB a dec:Grade . dec:GradeC a dec:Grade .
+dec:Sensitivity   a owl:Class .
+dec:Robust a dec:Sensitivity . dec:Fragile a dec:Sensitivity . dec:NotApplicable a dec:Sensitivity .
+dec:ClaimType     a owl:Class .
+dec:Minimum a dec:ClaimType . dec:Irreducible a dec:ClaimType .
+dec:ItemStatus    a owl:Class .
+dec:Active a dec:ItemStatus . dec:Retired a dec:ItemStatus . dec:Open a dec:ItemStatus . dec:Resolved a dec:ItemStatus .
+dec:ConsequenceKind a owl:Class .
+dec:Gain a dec:ConsequenceKind . dec:Cost a dec:ConsequenceKind . dec:Risk a dec:ConsequenceKind .
+dec:FormalStatus  a owl:Class .
+dec:Unverified a dec:FormalStatus . dec:Verified a dec:FormalStatus .
+
+# ---- Decision properties ----
+dec:number        a owl:DatatypeProperty ; rdfs:domain dec:Decision ; rdfs:range xsd:integer ; rdfs:comment "Legacy identity (D0001, D0125). New records use dec:story + dec:seq." .
+dec:story         a owl:DatatypeProperty ; rdfs:domain dec:Decision ; rdfs:range xsd:integer ; rdfs:comment "GitHub issue number of the story. IRI is urn:decisions:D<story>-<seq>." .
+dec:seq           a owl:DatatypeProperty ; rdfs:domain dec:Decision ; rdfs:range xsd:integer ; rdfs:comment "Per-story sequence, from 1." .
+dec:question      a owl:DatatypeProperty ; rdfs:domain dec:Decision ; rdfs:range xsd:string .
+dec:date          a owl:DatatypeProperty ; rdfs:domain dec:Decision ; rdfs:range xsd:date .
+dec:status        a owl:ObjectProperty   ; rdfs:domain dec:Decision ; rdfs:range dec:Status .
+dec:confidence    a owl:ObjectProperty   ; rdfs:domain dec:Decision ; rdfs:range dec:Confidence .
+dec:reversibility a owl:ObjectProperty   ; rdfs:domain dec:Decision ; rdfs:range dec:Reversibility .
+dec:sensitivity   a owl:ObjectProperty   ; rdfs:domain dec:Decision ; rdfs:range dec:Sensitivity .
+dec:outcome       a owl:DatatypeProperty ; rdfs:domain dec:Decision ; rdfs:range xsd:string ; rdfs:comment "One-line outcome." .
+dec:note          a owl:DatatypeProperty ; rdfs:range xsd:string ; rdfs:comment "Short free note. Facts belong in typed nodes." .
+dec:supersedes    a owl:ObjectProperty   ; rdfs:domain dec:Decision ; rdfs:range dec:Decision ; owl:inverseOf dec:supersededBy .
+dec:supersededBy  a owl:ObjectProperty   ; rdfs:domain dec:Decision ; rdfs:range dec:Decision .
+dec:option        a owl:ObjectProperty   ; rdfs:domain dec:Decision ; rdfs:range dec:Option .
+dec:chosen        a owl:ObjectProperty   ; rdfs:domain dec:Decision ; rdfs:range dec:Option .
+dec:uses          a owl:ObjectProperty   ; rdfs:domain dec:Decision ; rdfs:comment "Any Fact, Constraint, Assumption, Unknown the decision relies on." .
+dec:decisiveFact  a owl:ObjectProperty   ; rdfs:domain dec:Decision ; rdfs:range dec:Fact ; rdfs:subPropertyOf dec:uses .
+dec:criterion     a owl:ObjectProperty   ; rdfs:domain dec:Decision ; rdfs:range dec:Criterion .
+dec:score         a owl:ObjectProperty   ; rdfs:domain dec:Decision ; rdfs:range dec:Score .
+dec:minimality    a owl:ObjectProperty   ; rdfs:domain dec:Decision ; rdfs:range dec:MinimalityClaim .
+dec:revisitTrigger a owl:ObjectProperty  ; rdfs:domain dec:Decision ; rdfs:range dec:RevisitTrigger .
+dec:consequence   a owl:ObjectProperty   ; rdfs:domain dec:Decision ; rdfs:range dec:Consequence .
+dec:formalModel   a owl:DatatypeProperty ; rdfs:domain dec:Decision ; rdfs:range xsd:string .
+dec:formalStatus  a owl:ObjectProperty   ; rdfs:domain dec:Decision ; rdfs:range dec:FormalStatus .
+
+# ---- Option ----
+dec:summary       a owl:DatatypeProperty ; rdfs:domain dec:Option ; rdfs:range xsd:string .
+dec:statusQuo     a owl:DatatypeProperty ; rdfs:domain dec:Option ; rdfs:range xsd:boolean .
+dec:eliminatedBy  a owl:ObjectProperty   ; rdfs:domain dec:Option ; rdfs:range dec:Constraint .
+dec:eliminatedUnder a owl:ObjectProperty ; rdfs:domain dec:Option ; rdfs:range dec:Assumption ; rdfs:comment "Elimination holds only if this assumption holds." .
+dec:eliminationReason a owl:DatatypeProperty ; rdfs:domain dec:Option ; rdfs:range xsd:string .
+
+# ---- Context items ----
+dec:text          a owl:DatatypeProperty ; rdfs:range xsd:string .
+dec:source        a owl:DatatypeProperty ; rdfs:domain dec:Fact ; rdfs:comment "Path, path:line, or URL." .
+dec:grade         a owl:ObjectProperty   ; rdfs:domain dec:Fact ; rdfs:range dec:Grade .
+dec:accessed      a owl:DatatypeProperty ; rdfs:domain dec:Fact ; rdfs:range xsd:date .
+dec:strength      a owl:ObjectProperty   ; rdfs:domain dec:Constraint ; rdfs:range dec:Strength .
+dec:basis         a owl:ObjectProperty   ; rdfs:domain dec:Assumption ; rdfs:range dec:Fact .
+dec:couldChangeResult a owl:DatatypeProperty ; rdfs:domain dec:Unknown ; rdfs:range xsd:boolean .
+dec:itemStatus    a owl:ObjectProperty   ; rdfs:range dec:ItemStatus .
+dec:originDecision a owl:ObjectProperty  ; rdfs:range dec:Decision .
+dec:retiredOn     a owl:DatatypeProperty ; rdfs:range xsd:date .
+dec:retiredReason a owl:DatatypeProperty ; rdfs:range xsd:string .
+dec:definition    a owl:DatatypeProperty ; rdfs:domain dec:GlossaryTerm ; rdfs:range xsd:string .
+
+# ---- Scoring ----
+dec:weight        a owl:DatatypeProperty ; rdfs:domain dec:Criterion ; rdfs:range xsd:decimal .
+dec:weightReason  a owl:DatatypeProperty ; rdfs:domain dec:Criterion ; rdfs:range xsd:string .
+dec:grounds       a owl:ObjectProperty   ; rdfs:domain dec:Criterion ; rdfs:comment "Constraint or Fact the criterion comes from." .
+dec:scoreOption   a owl:ObjectProperty   ; rdfs:domain dec:Score ; rdfs:range dec:Option .
+dec:scoreCriterion a owl:ObjectProperty  ; rdfs:domain dec:Score ; rdfs:range dec:Criterion .
+dec:value         a owl:DatatypeProperty ; rdfs:domain dec:Score ; rdfs:range xsd:integer .
+dec:evidence      a owl:ObjectProperty   ; rdfs:domain dec:Score ; rdfs:range dec:Fact .
+dec:scenario      a owl:ObjectProperty   ; rdfs:domain dec:Criterion ; rdfs:range dec:Assumption ; rdfs:comment "Criterion applies only under this assumption (contingent scoring)." .
+
+# ---- Minimality ----
+dec:modelFact     a owl:ObjectProperty   ; rdfs:domain dec:MinimalityClaim ; rdfs:range dec:Fact .
+dec:optionSet     a owl:ObjectProperty   ; rdfs:domain dec:MinimalityClaim ; rdfs:range dec:Option .
+dec:metric        a owl:DatatypeProperty ; rdfs:domain dec:MinimalityClaim ; rdfs:range xsd:string .
+dec:claimType     a owl:ObjectProperty   ; rdfs:domain dec:MinimalityClaim ; rdfs:range dec:ClaimType .
+dec:dependsOn     a owl:ObjectProperty   ; rdfs:domain dec:RevisitTrigger ; rdfs:comment "Assumption or Unknown whose change fires the trigger." .
+dec:kind          a owl:ObjectProperty   ; rdfs:domain dec:Consequence ; rdfs:range dec:ConsequenceKind .
+
+# ---- Interface / contract link (v2) ----
+dec:touchesInterface a owl:DatatypeProperty ; rdfs:domain dec:Decision ; rdfs:range xsd:boolean ;
+    rdfs:comment "True if the chosen option adds or changes a public type, event, or API." .
+dec:contract a owl:DatatypeProperty ; rdfs:domain dec:Decision ; rdfs:range xsd:string ;
+    rdfs:comment "Project-relative path under docs/contracts/: <name>-vN.(openapi|asyncapi).(yaml|yml|json) for wire/process boundaries, <name>-vN.pyi or <name>-vN.d.ts for in-language APIs." .
+dec:consumer a owl:DatatypeProperty ; rdfs:domain dec:Decision ; rdfs:range xsd:string ;
+    rdfs:comment "Downstream layer or repo affected (for example org/service-name), or the literal none." .
+
+# ---- Fact probes (v4) ----
+dec:Probe      a owl:Class .
+dec:ProbeKind  a owl:Class .
+dec:GrepProbe a dec:ProbeKind . dec:HashProbe a dec:ProbeKind . dec:KeyProbe a dec:ProbeKind . dec:TestProbe a dec:ProbeKind .
+dec:Expect     a owl:Class .
+dec:Present a dec:Expect . dec:Absent a dec:Expect .
+dec:probe          a owl:ObjectProperty   ; rdfs:domain dec:Fact ; rdfs:range dec:Probe .
+dec:probeKind      a owl:ObjectProperty   ; rdfs:domain dec:Probe ; rdfs:range dec:ProbeKind .
+dec:probeTarget    a owl:DatatypeProperty ; rdfs:domain dec:Probe ; rdfs:range xsd:string ; rdfs:comment "Repo-relative path (no .. and not absolute), or https URL for Hash." .
+dec:probePattern   a owl:DatatypeProperty ; rdfs:domain dec:Probe ; rdfs:range xsd:string ; rdfs:comment "Python regex (re.MULTILINE) for Grep." .
+dec:probeExpect    a owl:ObjectProperty   ; rdfs:domain dec:Probe ; rdfs:range dec:Expect .
+dec:probeMinCount  a owl:DatatypeProperty ; rdfs:domain dec:Probe ; rdfs:range xsd:integer .
+dec:probeSha256    a owl:DatatypeProperty ; rdfs:domain dec:Probe ; rdfs:range xsd:string .
+dec:probeKeyPath   a owl:DatatypeProperty ; rdfs:domain dec:Probe ; rdfs:range xsd:string ; rdfs:comment "Dotted TOML key path, for Key." .
+dec:probeExpected  a owl:DatatypeProperty ; rdfs:domain dec:Probe ; rdfs:range xsd:string ; rdfs:comment "Expected value (string form) for Key." .
+dec:probeTestId    a owl:DatatypeProperty ; rdfs:domain dec:Probe ; rdfs:range xsd:string ; rdfs:comment "pytest node id for Test (run only with --tests)." .
+dec:atCommit       a owl:DatatypeProperty ; rdfs:domain dec:Fact ; rdfs:range xsd:string ; rdfs:comment "40-hex git commit at which the fact was true. Stamped by verify-facts.sh --stamp." .
+dec:driftedTo      a owl:ObjectProperty   ; rdfs:domain dec:Fact ; rdfs:range dec:Fact ; rdfs:comment "Acknowledges drift: a newer Fact records the current state." .
+
+# ---- Fact confirmation (v5) ----
+# Confirmed = dec:atCommit is set (a probe passed) OR dec:confirmedBy + dec:confirmedOn are set.
+dec:ConfirmationKind a owl:Class .
+dec:Human a dec:ConfirmationKind . dec:SecondSource a dec:ConfirmationKind .
+dec:confirmedBy   a owl:ObjectProperty   ; rdfs:domain dec:Fact ; rdfs:range dec:ConfirmationKind ;
+    rdfs:comment "For facts with no probe: Human (a person checked) or SecondSource (an independent check: tool run, second document)." .
+dec:confirmedOn   a owl:DatatypeProperty ; rdfs:domain dec:Fact ; rdfs:range xsd:date .
+dec:confirmedNote a owl:DatatypeProperty ; rdfs:domain dec:Fact ; rdfs:range xsd:string ; rdfs:comment "What was checked, and how. Required with dec:confirmedBy." .
